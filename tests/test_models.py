@@ -121,6 +121,32 @@ class TestModels(unittest.TestCase):
         self.assertEqual(len(order.line_items), 1)
         self.assertEqual(order.line_items[0].tracking_number, "1Z9999999999999999")
 
+    def test_download_datasheet(self):
+        import tempfile
+        from unittest.mock import MagicMock, patch
+        from pathlib import Path
+
+        prod = Product(
+            digikey_part_number="DK-123",
+            manufacturer_part_number="TEST-PART",
+            description="Test",
+            detailed_description="",
+            manufacturer=Manufacturer(id=1, name="Mfg"),
+            quantity_available=10,
+            unit_price=1.0,
+            datasheet_url="https://example.com/datasheet.pdf",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            mock_resp = MagicMock()
+            mock_resp.ok = True
+            mock_resp.content = b"%PDF-1.4 mock content"
+            with patch("requests.get", return_value=mock_resp):
+                pdf_path = prod.download_datasheet(tmpdir)
+                self.assertIsNotNone(pdf_path)
+                self.assertTrue(Path(pdf_path).exists())
+                self.assertEqual(Path(pdf_path).name, "TEST-PART_datasheet.pdf")
+
 
 if __name__ == "__main__":
     unittest.main()

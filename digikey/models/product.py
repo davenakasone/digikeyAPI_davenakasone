@@ -2,7 +2,8 @@
 Data models for DigiKey Product Information V4.
 """
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 from digikey.models.common import PriceBreak
 
 
@@ -97,6 +98,33 @@ class Product:
             if p.parameter.lower().strip() == target:
                 return p.value
         return None
+
+    def download_datasheet(self, destination: Union[str, Path] = "./datasheets") -> Optional[Path]:
+        """
+        Downloads the manufacturer PDF datasheet to a local directory or file path.
+        Returns the saved file Path, or None if no datasheet URL exists.
+        """
+        if not self.datasheet_url:
+            return None
+
+        import requests
+        dest = Path(destination)
+        if dest.is_dir() or not dest.suffix:
+            dest.mkdir(parents=True, exist_ok=True)
+            clean_mpn = "".join(c for c in self.manufacturer_part_number if c.isalnum() or c in ("-", "_")) or "datasheet"
+            dest_file = dest / f"{clean_mpn}_datasheet.pdf"
+        else:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest_file = dest
+
+        url = self.datasheet_url if self.datasheet_url.startswith("http") else f"https:{self.datasheet_url}"
+        resp = requests.get(url, timeout=30)
+        resp.raise_for_status()
+
+        with open(dest_file, "wb") as f:
+            f.write(resp.content)
+
+        return dest_file
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Product":
