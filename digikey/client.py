@@ -25,7 +25,7 @@ class DigiKey:
 
     Usage:
         >>> from digikey import DigiKey
-        >>> dk = DigiKey()  # Auto-discovers credentials from environment
+        >>> dk = DigiKey()  # Auto-discovers credentials from environment, throttles to 10 req/s
         >>> results = dk.products.search("STM32F407VGT6")
         >>> for prod in results.items:
         ...     print(prod.manufacturer.name, prod.manufacturer_part_number, prod.unit_price)
@@ -41,6 +41,7 @@ class DigiKey:
         tokens_cache_file: Optional[Path] = None,
         timeout: int = 30,
         max_retries: int = 3,
+        rate_limit_per_second: Optional[float] = 10.0,
     ):
         self.credentials = resolve_credentials(
             client_id=client_id,
@@ -60,6 +61,7 @@ class DigiKey:
             oauth_handler=self.oauth_handler,
             timeout=timeout,
             max_retries=max_retries,
+            rate_limit_per_second=rate_limit_per_second,
         )
 
         # Dedicated API Services
@@ -69,6 +71,16 @@ class DigiKey:
         self.orders = OrderService(self.base_client)
         self.mylists = MyListsService(self.base_client)
         self.quotes = QuoteService(self.base_client)
+
+    @property
+    def rate_limit_remaining(self) -> Optional[int]:
+        """Returns the remaining requests in the current DigiKey rate limit window."""
+        return self.base_client.rate_limit_remaining
+
+    @property
+    def rate_limit_limit(self) -> Optional[int]:
+        """Returns the total quota limit in the current DigiKey rate limit window."""
+        return self.base_client.rate_limit_limit
 
     # High-level convenience shortcuts
     def search(self, keywords: str, limit: int = 10, **kwargs) -> SearchResultsPage:

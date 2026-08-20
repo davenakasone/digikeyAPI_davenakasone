@@ -91,6 +91,32 @@ class TestCoreBaseClient(unittest.TestCase):
         # Initial try + 2 retries = 3 calls
         self.assertEqual(client.session.request.call_count, 3)
 
+    def test_rate_limit_headers_captured(self):
+        client = BaseClient(credentials=self.creds, oauth_handler=self.oauth_mock)
+        mock_resp = MagicMock()
+        mock_resp.ok = True
+        mock_resp.content = b'{"ok": true}'
+        mock_resp.json.return_value = {"ok": True}
+        mock_resp.headers = {
+            "x-ratelimit-limit": "1000",
+            "x-ratelimit-remaining": "850",
+        }
+        client.session.request = MagicMock(return_value=mock_resp)
+
+        client.get("/test/path")
+        self.assertEqual(client.rate_limit_limit, 1000)
+        self.assertEqual(client.rate_limit_remaining, 850)
+
+    def test_rate_limiter_logic(self):
+        from digikey.core.rate_limiter import RateLimiter
+        limiter = RateLimiter(rate_per_second=10.0, burst_capacity=2)
+        # First 2 acquires should be immediate
+        w1 = limiter.acquire()
+        w2 = limiter.acquire()
+        self.assertEqual(w1, 0.0)
+        self.assertEqual(w2, 0.0)
+
 
 if __name__ == "__main__":
     unittest.main()
+

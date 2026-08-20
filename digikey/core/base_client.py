@@ -15,6 +15,7 @@ from digikey.core.exceptions import (
     ServerError,
     ValidationError,
 )
+from digikey.core.rate_limiter import RateLimiter
 
 PRODUCTION_BASE_URL = "https://api.digikey.com"
 SANDBOX_BASE_URL = "https://sandbox-api.digikey.com"
@@ -23,7 +24,7 @@ SANDBOX_BASE_URL = "https://sandbox-api.digikey.com"
 class BaseClient:
     """
     HTTP Transport Layer for DigiKey API.
-    Handles headers, OAuth token injection, exponential backoff retries, and error mapping.
+    Handles headers, OAuth token injection, client-side rate limiting, exponential backoff retries, and error mapping.
     """
 
     def __init__(
@@ -33,6 +34,7 @@ class BaseClient:
         timeout: int = 30,
         max_retries: int = 3,
         backoff_factor: float = 1.0,
+        rate_limit_per_second: Optional[float] = 10.0,
     ):
         self.credentials = credentials or resolve_credentials()
         self.base_url = (
@@ -47,6 +49,11 @@ class BaseClient:
         self.timeout = timeout
         self.max_retries = max_retries
         self.backoff_factor = backoff_factor
+        self.rate_limiter = RateLimiter(rate_limit_per_second) if rate_limit_per_second else None
+
+        # Track live gateway quota telemetry
+        self.rate_limit_remaining: Optional[int] = None
+        self.rate_limit_limit: Optional[int] = None
 
     def _build_headers(self, custom_headers: Optional[Dict[str, str]] = None) -> Dict[str, str]:
         token = self.oauth_handler.get_valid_token()
@@ -71,12 +78,16 @@ class BaseClient:
         headers: Optional[Dict[str, str]] = None,
     ) -> Any:
         """
-        Executes an HTTP request against the DigiKey API with automatic retry for rate limits.
+        Executes an HTTP request against the DigiKey API with automatic client-side rate limiting and 429 retry.
         """
         url = path if path.startswith("http") else f"{self.base_url}{path}"
         retries = 0
 
         while True:
+            # Client-side proactive rate limiter pace
+            if self.rate_limiter:
+                self.rate_limiter.acquire()
+
             request_headers = self._build_headers(headers)
 
             try:
@@ -95,6 +106,18 @@ class BaseClient:
                     time.sleep(self.backoff_factor * (2 ** (retries - 1)))
                     continue
                 raise DigiKeyAPIError(f"Network request failed: {e}") from e
+
+            # Update live quota telemetry if present
+            if "x-ratelimit-remaining" in response.headers:
+                try:
+                    self.rate_limit_remaining = int(response.headers["x-ratelimit-remaining"])
+                except ValueError:
+                    pass
+            if "x-ratelimit-limit" in response.headers:
+                try:
+                    self.rate_limit_limit = int(response.headers["x-ratelimit-limit"])
+                except ValueError:
+                    pass
 
             # Handle Rate Limiting (HTTP 429)
             if response.status_code == 429:
@@ -124,7 +147,7 @@ class BaseClient:
     def _handle_error_response(self, response: requests.Response) -> None:
         status = response.status_code
         body = response.text
-        req_id = response.headers.get("X-Request-Id") or response.headers.get("apigee.edge.execution.id")
+        req_id = response.headers.get("x-digikey-request-id") or response.headers.get("X-Request-Id")
 
         try:
             err_json = response.json()
