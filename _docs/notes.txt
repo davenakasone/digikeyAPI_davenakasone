@@ -1,0 +1,43 @@
+===================================================================
+DigiKey API Reference Notes & Links
+===================================================================
+
+Official Developer Portal:
+- Portal Home: https://developer.digikey.com/
+- Products Catalog: https://developer.digikey.com/products
+- Resources & Guides: https://developer.digikey.com/resources
+- Developer Support & FAQ: https://developer.digikey.com/support
+
+API Base URLs:
+- Production: https://api.digikey.com
+- Sandbox:    https://sandbox-api.digikey.com
+
+Authentication Overview (OAuth 2.0):
+- Token Endpoint: https://api.digikey.com/v1/oauth2/token
+- Authorization Endpoint (3-Legged): https://api.digikey.com/v1/oauth2/authorize
+- Grant Types: 
+  * 2-Legged (Client Credentials): grant_type=client_credentials (server-to-server)
+  * 3-Legged (Authorization Code): grant_type=authorization_code (user data access)
+
+Required HTTP Headers:
+- Authorization: Bearer <access_token>
+- X-DIGIKEY-Client-Id: <your_client_id>
+- Content-Type: application/json (or application/x-www-form-urlencoded for token endpoint)
+
+Key API Categories:
+1. Product Information V4: Part search, keyword search, product details, pricing, stock levels.
+2. Order Status: Order history, line item tracking, order details.
+3. Quote: Request part pricing and lock quotes for specified durations.
+4. Ordering: Order placement & management (requires active DigiKey credit account).
+5. MyLists: List management (BOMs, saved lists).
+6. Barcode: Decode 2D barcodes from DigiKey packaging / invoices.
+7. SupplyChain: Bonded inventory tracking.
+8. Reference APIs: Categories, manufacturers, parameters lookup.
+
+GitHub & Community Resources:
+- Official Digi-Key GitHub: https://github.com/Digi-Key
+- Popular Python Client (peeter123): https://github.com/peeter123/digikey-api
+- Python V4 Fork (hurricaneJoef): https://github.com/hurricaneJoef/digikey-api
+- C# DigiKey API Client (issus): https://github.com/issus/DigiKeyApi
+- Node.js Client (siliconunited): https://github.com/siliconunited/node-digikey
+- OpenAPI Generator: https://github.com/OpenAPITools/openapi-generator
