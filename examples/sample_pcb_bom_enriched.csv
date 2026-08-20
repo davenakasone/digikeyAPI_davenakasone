@@ -1,0 +1,5 @@
+Designator,MPN,Quantity,Footprint,DigiKey_Part_Number,DigiKey_Stock,DigiKey_Unit_Price,DigiKey_Extended_Price,DigiKey_Status,DigiKey_Datasheet
+C1,CC0402KRX7R7BB104,10,0402,311-1338-2-ND,6038186,0.1,1.0,Active,https://yageogroup.com/content/datasheet/asset/file/UPY-GPHC_X7R_6_3V-TO-250V
+U1,STM32F407VGT6,1,LQFP-100,497-11605-ND,8248,14.64,14.64,Active,https://www.st.com/content/ccc/resource/technical/document/datasheet/ef/92/76/6d/bb/c2/4f/f7/DM00037051.pdf/files/DM00037051.pdf/jcr:content/translations/en.DM00037051.pdf
+U2,NE555P,2,DIP-8,296-NE555P-ND,53871,0.59,1.18,Active,https://www.ti.com/lit/ds/symlink/na555.pdf?ts=1779184670697&ref_url=https%253A%252F%252Fwww.ti.com%252Fproduct%252FNA555
+R1,RC0402JR-0710KL,5,0402,311-10KJRTR-ND,6377760,0.11,0.55,Active,https://yageogroup.com/content/datasheet/asset/file/PYU-RC_GROUP_51_ROHS_L

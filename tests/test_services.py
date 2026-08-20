@@ -49,6 +49,56 @@ class TestServices(unittest.TestCase):
         self.assertEqual(args[0], "/products/v4/search/keyword")
         self.assertEqual(kwargs["json_data"]["Keywords"], "resistor")
 
+    def test_product_service_search_with_filters(self):
+        self.mock_client.post.return_value = {"ProductsCount": 0, "Products": []}
+        service = ProductService(self.mock_client)
+        service.search(
+            keywords="capacitor",
+            in_stock_only=True,
+            category_id=3,
+            manufacturer_id=296,
+            sort_by="UnitPrice",
+        )
+
+        self.mock_client.post.assert_called_once()
+        args, kwargs = self.mock_client.post.call_args
+        payload = kwargs["json_data"]
+        self.assertEqual(payload["Keywords"], "capacitor")
+        self.assertTrue(payload["Filters"]["InStock"])
+        self.assertEqual(payload["Filters"]["TaxonomyIds"], [3])
+        self.assertEqual(payload["Filters"]["ManufacturerIds"], [296])
+        self.assertEqual(payload["Sort"]["SortBy"], "UnitPrice")
+
+    def test_product_service_find_alternates(self):
+        self.mock_client.get.return_value = {
+            "Product": {
+                "DigiKeyPartNumber": "TARGET-ND",
+                "ManufacturerProductNumber": "TARGET-MPN",
+                "QuantityAvailable": 0,
+            }
+        }
+        self.mock_client.post.return_value = {
+            "ProductsCount": 2,
+            "Products": [
+                {
+                    "DigiKeyPartNumber": "TARGET-ND",
+                    "ManufacturerProductNumber": "TARGET-MPN",
+                    "QuantityAvailable": 0,
+                },
+                {
+                    "DigiKeyPartNumber": "ALT-1-ND",
+                    "ManufacturerProductNumber": "ALT-1-MPN",
+                    "QuantityAvailable": 5000,
+                },
+            ],
+        }
+
+        service = ProductService(self.mock_client)
+        alternates = service.find_alternates("TARGET-MPN")
+
+        self.assertEqual(len(alternates), 1)
+        self.assertEqual(alternates[0].manufacturer_part_number, "ALT-1-MPN")
+
     def test_product_service_get_details(self):
         self.mock_client.get.return_value = {
             "Product": {

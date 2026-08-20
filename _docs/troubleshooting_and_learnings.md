@@ -120,3 +120,23 @@ digikey/
 2. **Automatic Refresh:** Never expose raw token management to the consumer unless they ask for it.
 3. **Structured Outputs:** Return typed dataclasses or Pydantic models alongside raw JSON for ease of use.
 4. **Rate Limit & Retry:** Built-in exponential backoff for `429 Too Many Requests`.
+
+---
+
+## 6. Live Endpoint Discoveries & PCB Sourcing Workflows
+
+### Exact DigiKey V4 Production Endpoints:
+- `POST /products/v4/search/keyword`: Primary search handler for all general keywords, MPNs, and DKPNs.
+  - Supports filter payload: `{"Filters": {"InStock": true, "TaxonomyIds": [cat_id], "ManufacturerIds": [mfg_id]}}`.
+  - Supports sort payload: `{"Sort": {"SortBy": "UnitPrice"}}`.
+- `GET /products/v4/search/{productNumber}/productdetails`: Universal details endpoint. Resolves BOTH Manufacturer Part Numbers and DigiKey Part Numbers.
+  - Returns `Parameters` with `ParameterText` and `ValueText`.
+  - Returns `ProductVariations` array containing package-specific `DigiKeyProductNumber` and `StandardPricing`.
+  - Returns direct `DatasheetUrl` (or `PrimaryDatasheet`) and `PhotoUrl`.
+- `GET /products/v4/search/categories` & `GET /products/v4/search/categories/{id}`: Category taxonomy and nested children.
+- `GET /products/v4/search/manufacturers`: Complete list of 3,714 authorized manufacturers.
+
+### PCB Design & BOM Workflow Integration:
+- CLI command `python -m digikey bom <path_to_bom.csv>` automatically parses EDA schematic BOM exports (KiCad, Altium, Eagle).
+- Checks stock status (`Active`, `InStock`), attaches DigiKey part numbers, computes tiered batch production costs, and downloads manufacturer datasheet links.
+
