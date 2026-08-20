@@ -1,5 +1,6 @@
 """
 Credential resolution and configuration for DigiKey SDK.
+Cross-platform support for Linux, macOS, and Windows.
 """
 import os
 from pathlib import Path
@@ -27,7 +28,11 @@ def resolve_credentials(
     2. Path specified by `DIGIKEY_ENV_PATH` or `VAULT_ENV_PATH` environment variable
     3. Custom `env_file_path` passed to function
     4. Project-local `.env` file
-    5. Environment variables (DIGIKEY_CLIENT_ID, DIGIKEY_CLIENT_SECRET)
+    5. User home standard config paths:
+       - ~/.digikey.env
+       - ~/.config/digikey/.env
+       - %APPDATA%/digikey/.env (Windows)
+    6. System environment variables (DIGIKEY_CLIENT_ID, DIGIKEY_CLIENT_SECRET)
     """
     # 1. Check custom path or environment variable path
     target_env = env_file_path or os.getenv("DIGIKEY_ENV_PATH") or os.getenv("VAULT_ENV_PATH")
@@ -40,6 +45,20 @@ def resolve_credentials(
     local_env = Path.cwd() / ".env"
     if local_env.exists():
         load_dotenv(dotenv_path=local_env, override=False)
+
+    # 3. Check standard user home directories (cross-platform Linux/Mac/Windows)
+    home_candidates = [
+        Path.home() / ".digikey.env",
+        Path.home() / ".config" / "digikey" / ".env",
+    ]
+    appdata = os.getenv("APPDATA")
+    if appdata:
+        home_candidates.append(Path(appdata) / "digikey" / ".env")
+
+    for candidate in home_candidates:
+        if candidate.exists():
+            load_dotenv(dotenv_path=candidate, override=False)
+            break
 
     resolved_client_id = (
         client_id
@@ -66,7 +85,7 @@ def resolve_credentials(
         raise ValueError(
             "Missing DigiKey credentials. Please provide client_id and client_secret, "
             "set DIGIKEY_CLIENT_ID and DIGIKEY_CLIENT_SECRET in your environment, "
-            "or specify DIGIKEY_ENV_PATH pointing to your credentials file."
+            "or place credentials in ~/.digikey.env or specify DIGIKEY_ENV_PATH."
         )
 
     return DigiKeyCredentials(

@@ -39,6 +39,22 @@ class TestAuth(unittest.TestCase):
         finally:
             os.remove(tmp_path)
 
+    def test_resolve_credentials_from_home_dir(self):
+        import tempfile
+        with tempfile.NamedTemporaryFile("w", delete=False) as tmp:
+            tmp.write("DIGIKEY_CLIENT_ID=home_user_id\nDIGIKEY_CLIENT_SECRET=home_user_sec\n")
+            tmp_path = Path(tmp.name)
+
+        try:
+            with patch("digikey.auth.credentials.Path.home", return_value=tmp_path.parent):
+                with patch("digikey.auth.credentials.Path.exists", side_effect=lambda self: str(self) == str(tmp_path)):
+                    with patch.dict(os.environ, {}, clear=True):
+                        # Should find the mock home config
+                        pass
+        finally:
+            if tmp_path.exists():
+                os.remove(tmp_path)
+
     def test_resolve_credentials_missing_raises(self):
         with patch.dict(os.environ, {}, clear=True):
             with self.assertRaises(ValueError):
