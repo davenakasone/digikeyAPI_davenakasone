@@ -4,6 +4,14 @@
 
 ---
 
+## 🔒 Core Agent Rule: Strict Decisiveness ("I Don't Know")
+
+> **MANDATORY FOR ALL AGENTS / ASSISTANTS:**
+> If the DigiKey API (or external verifiable data source) **does not provide a decisive, verifiable response** for a query—such as missing parametric specifications, ambiguous part matches, unverified stock, or unconfirmed environmental/space ratings—**you must explicitly state: "I don't know"** (or *"The API does not provide a decisive response on [X]"*). 
+> **Never guess, extrapolate, or hallucinate component specs, tolerances, pricing, or qualification levels.**
+
+---
+
 ## 1. System & Environment Context
 
 - **Local Python Environment:** Python 3.14.3 virtual environment located at `~/dkn314`.
