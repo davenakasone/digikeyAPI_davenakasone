@@ -175,6 +175,20 @@ class TestServices(unittest.TestCase):
             json_data={"QuoteLineItems": [{"DigiKeyPartNumber": "DK-1", "Quantity": 500}]},
         )
 
+    def test_health_inspector_all_pass(self):
+        from digikey.services.doctor import HealthInspector
+        self.mock_client.oauth_handler.get_valid_token.return_value = "valid_token_xyz"
+        self.mock_client.post.return_value = {"ProductsCount": 1000}
+        self.mock_client.get.return_value = {"Product": {"ManufacturerProductNumber": "NE555P"}}
+        self.mock_client.rate_limit_remaining = 900
+        self.mock_client.rate_limit_limit = 1000
+
+        inspector = HealthInspector(self.mock_client)
+        results = inspector.run_all_checks()
+
+        self.assertEqual(len(results), 6)
+        self.assertTrue(all(r.passed for r in results))
+
 
 if __name__ == "__main__":
     unittest.main()

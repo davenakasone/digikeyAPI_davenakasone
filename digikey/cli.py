@@ -168,12 +168,37 @@ def handle_bom(args, dk: DigiKey):
         print(f"\n💾 Enriched BOM saved to: {out_file}")
 
 
+def handle_doctor(args, dk: DigiKey):
+    print("🩺 Running DigiKey API Health Audit & Diagnostic Suite...")
+    print("=" * 65)
+
+    checks = dk.doctor.run_all_checks()
+    all_passed = True
+
+    for c in checks:
+        icon = "✅" if c.passed else "❌"
+        latency_str = f"({c.latency_ms:>5.1f}ms)" if c.latency_ms > 0 else "        "
+        print(f" {icon} {c.check_name:<42} {latency_str} : {c.message}")
+        if not c.passed:
+            all_passed = False
+
+    print("=" * 65)
+    if all_passed:
+        print("🎉 ALL SYSTEMS HEALTHY. DigiKey API endpoints and credentials verified.")
+    else:
+        print("⚠️ SOME DIAGNOSTIC CHECKS FAILED. Please review the errors above.", file=sys.stderr)
+        sys.exit(1)
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="digikey",
-        description="DigiKey Python SDK CLI - Part search, details, alternates, and BOM enrichment.",
+        description="DigiKey Python SDK CLI - Part search, details, alternates, BOM enrichment, and health diagnostics.",
     )
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    # doctor
+    subparsers.add_parser("doctor", help="Run comprehensive API and credentials health audit")
 
     # search
     p_search = subparsers.add_parser("search", help="Search DigiKey catalog")
@@ -207,7 +232,9 @@ def main():
 
     try:
         dk = DigiKey()
-        if args.command == "search":
+        if args.command == "doctor":
+            handle_doctor(args, dk)
+        elif args.command == "search":
             handle_search(args, dk)
         elif args.command == "details":
             handle_details(args, dk)

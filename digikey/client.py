@@ -12,6 +12,7 @@ from digikey.models.category import Category
 from digikey.models.common import SearchResultsPage
 from digikey.models.product import Product
 from digikey.services.barcode import BarcodeService
+from digikey.services.doctor import DiagnosticResult, HealthInspector
 from digikey.services.mylists import MyListsService
 from digikey.services.orders import OrderService
 from digikey.services.products import ProductService
@@ -71,6 +72,7 @@ class DigiKey:
         self.orders = OrderService(self.base_client)
         self.mylists = MyListsService(self.base_client)
         self.quotes = QuoteService(self.base_client)
+        self.doctor = HealthInspector(self.base_client)
 
     @property
     def rate_limit_remaining(self) -> Optional[int]:

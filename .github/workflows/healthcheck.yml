@@ -1,0 +1,37 @@
+name: DigiKey API Health & Endpoint Drift Audit
+
+on:
+  schedule:
+    # Run every Monday at 08:00 UTC
+    - cron: '0 8 * * 1'
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Package & Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Run Unit Tests
+        run: |
+          python -m unittest discover tests
+
+      - name: Run Live API Health Doctor (if secrets configured)
+        if: env.DIGIKEY_CLIENT_ID != '' && env.DIGIKEY_CLIENT_SECRET != ''
+        env:
+          DIGIKEY_CLIENT_ID: ${{ secrets.DIGIKEY_CLIENT_ID }}
+          DIGIKEY_CLIENT_SECRET: ${{ secrets.DIGIKEY_CLIENT_SECRET }}
+        run: |
+          python -m digikey doctor
