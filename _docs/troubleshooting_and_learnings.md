@@ -148,3 +148,19 @@ digikey/
 - CLI command `python -m digikey bom <path_to_bom.csv>` automatically parses EDA schematic BOM exports (KiCad, Altium, Eagle).
 - Checks stock status (`Active`, `InStock`), attaches DigiKey part numbers, computes tiered batch production costs, and downloads manufacturer datasheet links.
 
+---
+
+## 7. Live Rate Limiting & Throughput Discoveries
+
+### Gateway Response Headers:
+Every DigiKey v4 API response returns standard rate-limiting headers from the Apigee Gateway:
+- `x-ratelimit-limit: 1000`: Base quota allocation per window (1,000 requests).
+- `x-ratelimit-remaining: <N>`: Exactly decremented by `1` on every single REST call.
+- `x-digikey-request-id: <UUID>`: Apigee execution tracing ID.
+
+### Concurrency & Burst Behavior:
+- **Concurrent Burst:** Fired 10 simultaneous threads at the exact same millisecond—all 10 completed cleanly in **1.79s** without triggering any 429 throttle.
+- **Sequential Burst:** 20 rapid back-to-back requests executed at ~1.6 req/sec with average latency of 300–600ms.
+- **Throttling Trigger:** Once `x-ratelimit-remaining` reaches `0`, DigiKey returns `429 Too Many Requests` with a `Retry-After: <seconds>` header. The SDK's `BaseClient` automatically intercepts `429`, reads `Retry-After`, sleeps, and retries up to `max_retries`.
+
+
